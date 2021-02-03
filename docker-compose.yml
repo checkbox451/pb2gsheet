@@ -1,0 +1,21 @@
+version: "2"
+
+services:
+  pb2gsheet:
+    build:
+      context: ./pb2gsheet
+      args:
+        PRIVAT_API_ID: $PRIVAT_API_ID
+        PRIVAT_API_TOKEN: $PRIVAT_API_TOKEN
+        ACCOUNTS: $PRIVAT_ACCOUNTS
+        GOOGLE_APPLICATION_CREDENTIALS: $GOOGLE_APPLICATION_CREDENTIALS
+        GOOGLE_SPREADSHEET_KEY: $GOOGLE_SPREADSHEET_KEY
+        GOOGLE_WORKSHEET_TITLE: $GOOGLE_WORKSHEET_TITLE_CASHLESS
+        DB_DIR: /db
+    volumes:
+    - db:/db
+    tty: true
+    restart: unless-stopped
+
+volumes:
+  db:
