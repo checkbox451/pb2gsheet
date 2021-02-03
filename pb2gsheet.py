@@ -83,7 +83,12 @@ def store_transaction(transaction):
     spreadsheet = client.open_by_key(spreadsheet_key)
     wks = spreadsheet.worksheet_by_title(worksheet_title)
 
-    dat_od = str(dateutil.parser.parse(transaction["DAT_OD"]).date())
+    dat_od = str(
+        dateutil.parser.parse(
+            transaction["DAT_OD"],
+            dayfirst=True,
+        ).date()
+    )
     sum_e = float(transaction["SUM_E"])
     sender = get_sender(transaction["OSND"])
     wks.append_table([[dat_od, sum_e, sender]])
