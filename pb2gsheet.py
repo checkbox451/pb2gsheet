@@ -3,11 +3,16 @@ import os
 import re
 import time
 from datetime import datetime
+from itertools import chain
 from pathlib import Path
 
 import dateutil.parser
 import pygsheets
 import requests
+from sqlalchemy import Column, Integer, String, create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from telebot import TeleBot
 
 accounts = [acc for acc in os.environ.get("ACCOUNTS", "").split(",") if acc]
 
@@ -15,10 +20,19 @@ sender_pat = re.compile(r", (\S+ \S+ \S+)$")
 
 db_dir = os.environ.get("DB_DIR") or "."
 transactions_file = Path(db_dir, "transactions.json")
+bot_db = Path(db_dir, "checkbox451_bot.db")
 
 service_account_file = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
 spreadsheet_key = os.environ.get("GOOGLE_SPREADSHEET_KEY")
 worksheet_title = os.environ.get("GOOGLE_WORKSHEET_TITLE")
+
+bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
+
+
+class UserRole(declarative_base()):
+    __tablename__ = "user_roles"
+    user_id = Column(Integer, primary_key=True)
+    role_name = Column(String(10), primary_key=True)
 
 
 def log(msg):
@@ -94,6 +108,32 @@ def store_transaction(transaction):
     wks.append_table([[dat_od, sum_e, sender]])
 
 
+def bot_nofify(transaction):
+    if bot_token is None or not bot_db.exists():
+        return
+
+    engine = create_engine(f"sqlite:///{bot_db}")
+    session = sessionmaker(bind=engine)()
+
+    supervisors = list(
+        chain(
+            *session.query(UserRole.user_id).filter_by(role_name="SUPERVISOR")
+        )
+    )
+    if supervisors:
+        bot = TeleBot(bot_token)
+
+        sum_e = transaction["SUM_E"]
+        sender = get_sender(transaction["OSND"])
+
+        for user_id in supervisors:
+            bot.send_message(
+                user_id,
+                f"Безготівкове зарахування: {sum_e} грн"
+                + (f" від {sender}" if sender else ""),
+            )
+
+
 def main():
     prev = read_transactions()
 
@@ -110,6 +150,7 @@ def main():
                 ) and transaction["TRANTYPE"] == "C":
                     log(transaction)
                     store_transaction(transaction)
+                    bot_nofify(transaction)
         else:
             log("no transactions")
 
