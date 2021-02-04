@@ -1,5 +1,5 @@
+SQLAlchemy==1.3.23
+pyTelegramBotAPI==3.7.6
 pygsheets==2.0.4
 python-dateutil==2.8.1
-python-telegram-bot==13.2
 requests==2.25.1
-SQLAlchemy==1.3.23
