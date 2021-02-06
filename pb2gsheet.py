@@ -134,23 +134,47 @@ def bot_nofify(transaction):
             )
 
 
+def new_transaction(prev, curr):
+    prev_set = {frozenset(t.items()) for t in prev}
+    curr_set = {frozenset(t.items()) for t in curr}
+
+    new = [dict(i) for i in curr_set - prev_set]
+    new.sort(
+        key=lambda x: dateutil.parser.parse(
+            x["DATE_TIME_DAT_OD_TIM_P"],
+            dayfirst=True,
+        )
+    )
+
+    return new
+
+
 def main():
     prev = read_transactions()
 
     while True:
-        curr = get_transaction()
+        try:
+            curr = get_transaction()
+        except Exception as err:
+            log(err)
+            time.sleep(60)
+            continue
 
         if curr != prev:
             write_transactions(curr)
 
-        if len(curr) > (idx := len(prev)):
-            for transaction in curr[idx:]:
-                if (
-                    not accounts or transaction["AUT_MY_ACC"] in accounts
-                ) and transaction["TRANTYPE"] == "C":
-                    log(transaction)
+        for transaction in new_transaction(prev, curr):
+            if (
+                not accounts or transaction["AUT_MY_ACC"] in accounts
+            ) and transaction["TRANTYPE"] == "C":
+                log(transaction)
+                try:
                     store_transaction(transaction)
                     bot_nofify(transaction)
+                except Exception as err:
+                    log(err)
+                    time.sleep(60)
+                    continue
         else:
             log("no transactions")
 
