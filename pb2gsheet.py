@@ -149,37 +149,43 @@ def new_transaction(prev, curr):
     return new
 
 
+def process_transactions(prev):
+    try:
+        curr = get_transaction()
+    except Exception as err:
+        log(err)
+        return prev
+
+    if transactions := new_transaction(prev, curr):
+        for transaction in transactions:
+            if transaction["TRANTYPE"] == "C" and (
+                not accounts or transaction["AUT_MY_ACC"] in accounts
+            ):
+                log(transaction)
+
+                try:
+                    store_transaction(transaction)
+                except Exception as err:
+                    log(err)
+                    return prev
+
+                write_transactions(curr)
+
+                try:
+                    bot_nofify(transaction)
+                except Exception as err:
+                    log(err)
+    else:
+        log("no new transactions")
+
+    return curr
+
+
 def main():
     prev = read_transactions()
 
     while True:
-        try:
-            curr = get_transaction()
-        except Exception as err:
-            log(err)
-            time.sleep(60)
-            continue
-
-        if curr != prev:
-            write_transactions(curr)
-
-        for transaction in new_transaction(prev, curr):
-            if (
-                not accounts or transaction["AUT_MY_ACC"] in accounts
-            ) and transaction["TRANTYPE"] == "C":
-                log(transaction)
-                try:
-                    store_transaction(transaction)
-                    bot_nofify(transaction)
-                except Exception as err:
-                    log(err)
-                    time.sleep(60)
-                    continue
-        else:
-            log("no transactions")
-
-        prev = curr
-
+        prev = process_transactions(prev)
         time.sleep(60)
 
 
