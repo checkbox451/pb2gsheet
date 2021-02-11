@@ -16,7 +16,7 @@ from telebot import TeleBot
 
 accounts = [acc for acc in os.environ.get("ACCOUNTS", "").split(",") if acc]
 
-sender_pat = re.compile(r", (\S+ \S+ \S+)$")
+sender_pat = re.compile(r"^.+,\s*(\S+\s+\S+\s+\S+)\s*$")
 
 db_dir = os.environ.get("DB_DIR") or "."
 transactions_file = Path(db_dir, "transactions.json")
