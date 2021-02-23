@@ -36,6 +36,8 @@ class UserRole(declarative_base()):
 
 
 def log(msg):
+    if isinstance(msg, Exception):
+        msg = repr(msg)
     now = datetime.now().replace(microsecond=0)
     print(f"{now}: {msg}")
 
